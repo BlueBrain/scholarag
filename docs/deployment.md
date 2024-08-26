@@ -28,7 +28,7 @@ Five containers are then spawn:
 - The opensearch database is deployed under `opensearchproject/opensearch:2.5.0` called `scholarag-opensearch-1` and reachable on `localhost:9200`. 
 - `grobid/grobid:0.8.0` called `scholarag-grobid-1` being the grobid server reachable on `localhost:8070`.
 - The redis instance called `scholarag-redis-1` reachable on `localhost:6379`.
-- The ETL application `bbpgitlab.epfl.ch:5050/ml/bbs-etl:parse-v1.8.4` called `scholarag-etl-1` reachable on port `9090`.
+- The ETL application `ETL IMAGE` called `scholarag-etl-1` reachable on port `9090`.
 
 To destroy everything, one can simply use the following command:
 ```bash

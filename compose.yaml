@@ -32,7 +32,7 @@ services:
       start_period: 5s
       timeout: 10s
   etl:
-    image: "bbpgitlab.epfl.ch:5050/ml/bbs-etl:parse-v1.8.4"
+    image: "ETL IMAGE"
     ports:
       - "9090:8080"
     environment:
