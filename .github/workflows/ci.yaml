@@ -75,7 +75,7 @@ jobs:
           --health-timeout 5s
           --health-retries 10
         ports:
-          - 6379:6379
+          - 6380:6379
     env:
       PIP_CACHE_DIR: .cache/pip
     strategy:
