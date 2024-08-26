@@ -61,7 +61,7 @@ jobs:
           discovery.type: single-node
           plugins.security.disabled: true
         options: >-
-          --health-cmd "curl http://localhost:9200"
+          --health-cmd "curl http://localhost:9201"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 10
