@@ -42,6 +42,40 @@ jobs:
           ruff format --check src/ tests
   unit-tests:
     runs-on: ${{ matrix.os }}
+    services:
+      elasticsearch:
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.3.3
+        env:
+          discovery.type: single-node
+          xpack.security.enabled: false
+        options: >-
+          --health-cmd "curl http://localhost:9200/_cluster/health"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 9200:9200
+      opensearch:
+        image: opensearchproject/opensearch:2.5.0
+        env:
+          discovery.type: single-node
+          plugins.security.disabled: true
+        options: >-
+          --health-cmd "curl http://localhost:9200"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 9201:9200
+      redis:
+        image: redis:7.2.3
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 6379:6379
     env:
       PIP_CACHE_DIR: .cache/pip
     strategy:
