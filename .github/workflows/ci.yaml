@@ -109,4 +109,4 @@ jobs:
       - name: Running mypy and tests
         run: |
           mypy src/
-          pytest --color=yes -m "not real_request"
+          pytest --color=yes
