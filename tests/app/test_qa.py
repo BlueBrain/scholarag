@@ -282,14 +282,14 @@ def test_generative_qa_metadata_retriever_external_apis(app_client):
 
     params = {}
     with patch(
-        "bbs-pipeline.retrieve_metadata.get_citation_count",
+        "scholarag.retrieve_metadata.get_citation_count",
         new=get_citation_count,
     ):
         with patch(
-            "bbs-pipeline.retrieve_metadata.get_journal_name",
+            "scholarag.retrieve_metadata.get_journal_name",
             new=get_journal_name,
         ):
-            with patch("bbs-pipeline.retrieve_metadata.recreate_abstract") as abstract:
+            with patch("scholarag.retrieve_metadata.recreate_abstract") as abstract:
                 abstract.__name__ = "recreate_abstract"
                 abstract.return_value = "Great abstract"
                 response = app_client.post(
@@ -379,7 +379,7 @@ async def test_streamed_generative_qa(app_client, redis_fixture, mock_http_calls
     expected_tokens = (
         "This is an amazingly well streamed response. I can't believe how good it is!"
     )
-    with patch("bbs-pipeline.app.middleware.get_cache", redis_fixture):
+    with patch("scholarag.app.middleware.get_cache", redis_fixture):
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app), base_url="http://test"
         ) as http_client:
@@ -450,7 +450,7 @@ async def test_streamed_generative_qa_error(app_client, redis_fixture):
     params = {}
     expected_tokens = "<bbs_json_error>"  # We expect an empty answer.
 
-    with patch("bbs-pipeline.app.middleware.get_cache", redis_fixture):
+    with patch("scholarag.app.middleware.get_cache", redis_fixture):
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app), base_url="http://test"
         ) as http_client:

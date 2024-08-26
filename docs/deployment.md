@@ -50,7 +50,7 @@ to the database). For the second, one can launch `create_impact_factor_index.py`
 further information. Both can be launched locally or after spawning a new docker container with the package installed with the 
 following command line:
 ```bash
-docker run -it --network=host bbs-pipeline-app /bin/bash
+docker run -it --network=host scholarag-app /bin/bash
 ```
 
 The flag `--network=host` is not mandatory but it is allowing a user to easily connect to

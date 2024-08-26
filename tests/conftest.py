@@ -202,8 +202,8 @@ def mock_http_calls(httpx_mock, non_mocked_hosts):
     non_mocked_hosts.append("testserver")
     non_mocked_hosts.append("test")
     with (
-        patch("bbs-pipeline.retrieve_metadata.recreate_abstract") as abstract,
-        patch("bbs-pipeline.retrieve_metadata.get_impact_factors") as impact,
+        patch("scholarag.retrieve_metadata.recreate_abstract") as abstract,
+        patch("scholarag.retrieve_metadata.get_impact_factors") as impact,
     ):
         abstract.__name__ = "recreate_abstract"
         abstract.return_value = "Great abstract"

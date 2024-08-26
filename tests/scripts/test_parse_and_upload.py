@@ -48,7 +48,7 @@ def test_get_parser():
 async def test_raise_error(tmp_path):
     with pytest.raises(ValueError):
         with patch(
-            "bbs-pipeline.scripts.parse_and_upload.setup_parsing_ds",
+            "scholarag.scripts.parse_and_upload.setup_parsing_ds",
             return_value=(AsyncMock(), AsyncMock()),
         ):
             await run(
@@ -97,7 +97,7 @@ async def test_run(tmp_path, httpx_mock):
     )
 
     with patch(
-        "bbs-pipeline.scripts.parse_and_upload.setup_parsing_ds",
+        "scholarag.scripts.parse_and_upload.setup_parsing_ds",
         return_value=(AsyncMock(), ParsingService(url="http://localhost/fake_parser")),
     ):
         # Call specifying one file
@@ -145,7 +145,7 @@ async def fake_close(self):
 
 
 @pytest.mark.asyncio
-@patch("bbs-pipeline.document_stores.AsyncOpenSearch.close", new=fake_close)
+@patch("scholarag.document_stores.AsyncOpenSearch.close", new=fake_close)
 async def test_run_with_es_instance(tmp_path, httpx_mock, get_testing_async_ds_client):
     ds_client, parameters = get_testing_async_ds_client
 
@@ -186,7 +186,7 @@ async def test_run_with_es_instance(tmp_path, httpx_mock, get_testing_async_ds_c
     await ds_client.create_index(index, settings=parameters[-1], mappings=parameters[0])
     await ds_client.client.indices.refresh()
     with patch(
-        "bbs-pipeline.scripts.parse_and_upload.setup_parsing_ds",
+        "scholarag.scripts.parse_and_upload.setup_parsing_ds",
         return_value=(ds_client, ParsingService(url="http://localhost/fake_parser")),
     ):
         # Call specifying one file

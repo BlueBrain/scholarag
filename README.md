@@ -16,7 +16,7 @@ Our API requires an Elascticsearch/Opensearch database to work, which can be qui
 The script `manage_index.py` can be used to create an index compatible with `scholarag`'s API requirements.
 
 ```bash
-pip install bbs-pipeline
+pip install scholarag
 docker run -p 9200:9200 -it -d opensearchproject/opensearch:2.5.0 -Ediscovery.type=single-node -Eplugins.security.disabled=true
 manage-index create pmc_paragraphs http://localhost:9200 -v
 ```
@@ -65,7 +65,7 @@ to unlock the `Question Answering` ones.
 Finally, start the API.
 
 ```bash
-bbs-pipeline-api
+scholarag-api
 ```
 
 By default, it opens the API on port 8000. The swagger ui can be accessed at `http://localhost:8000/docs`

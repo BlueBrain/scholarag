@@ -47,7 +47,7 @@ def main() -> None:
     parser = get_parser()
     args = parser.parse_args()
     uvicorn.run(
-        "bbs-pipeline.app.main:app",
+        "scholarag.app.main:app",
         host=args.host,
         port=args.port,
         workers=args.workers,

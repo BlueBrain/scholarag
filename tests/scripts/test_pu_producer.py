@@ -64,9 +64,7 @@ async def test_run(
     get_session_mock = Mock()
     session_mock = Mock()
     get_session_mock.return_value = session_mock
-    monkeypatch.setattr(
-        "bbs-pipeline.scripts.pu_producer.get_session", get_session_mock
-    )
+    monkeypatch.setattr("scholarag.scripts.pu_producer.get_session", get_session_mock)
     session_mock.create_client.side_effect = get_client
 
     index_name = "paragraphs"

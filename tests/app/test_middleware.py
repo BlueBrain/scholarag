@@ -190,7 +190,7 @@ async def test_get_and_set_cache_without_cache():
             "port": 1515,
         },
     )
-    with patch("bbs-pipeline.app.middleware.get_settings", lambda: test_settings):
+    with patch("scholarag.app.middleware.get_settings", lambda: test_settings):
         response = await get_and_set_cache(request, fake_callable)
         assert response == "test"
 
@@ -250,8 +250,8 @@ async def test_get_and_set_cache_with_cache_key_not_in_db(response_body):
     fake_callable.return_value = response_mock
 
     with (
-        patch("bbs-pipeline.app.middleware.get_settings", lambda: test_settings),
-        patch("bbs-pipeline.app.middleware.get_cache", lambda settings: redis_mock),
+        patch("scholarag.app.middleware.get_settings", lambda: test_settings),
+        patch("scholarag.app.middleware.get_cache", lambda settings: redis_mock),
     ):
         response = await get_and_set_cache(request, fake_callable)
 
@@ -318,8 +318,8 @@ async def test_get_and_set_cache_with_cache_key_in_db():
         ("content-length", "6"),
     }
     with (
-        patch("bbs-pipeline.app.middleware.get_settings", lambda: test_settings),
-        patch("bbs-pipeline.app.middleware.get_cache", lambda settings: redis_mock),
+        patch("scholarag.app.middleware.get_settings", lambda: test_settings),
+        patch("scholarag.app.middleware.get_cache", lambda settings: redis_mock),
     ):
         response = await get_and_set_cache(request, fake_callable)
 
@@ -387,7 +387,7 @@ async def test_strip_path_prefix(path, prefix, trimmed_path):
     async def async_callable(request):
         return Response(content=request.url.path, media_type="text/plain")
 
-    with patch("bbs-pipeline.app.middleware.get_settings", lambda: test_settings):
+    with patch("scholarag.app.middleware.get_settings", lambda: test_settings):
         response = await strip_path_prefix(request, async_callable)
 
     assert response.body.decode("utf-8") == trimmed_path
@@ -432,8 +432,8 @@ async def test_get_and_set_cache_chatbot():
     fake_callable = AsyncMock(return_value=fake_response)
 
     with (
-        patch("bbs-pipeline.app.middleware.get_settings", lambda: test_settings),
-        patch("bbs-pipeline.app.middleware.get_cache", lambda settings: redis_mock),
+        patch("scholarag.app.middleware.get_settings", lambda: test_settings),
+        patch("scholarag.app.middleware.get_cache", lambda settings: redis_mock),
     ):
         response = await get_and_set_cache(request, fake_callable)
 
@@ -444,7 +444,7 @@ async def test_get_and_set_cache_chatbot():
 async def test_caching_retrieval(app_client, redis_fixture, mock_http_calls):
     """Test caching is working for retrieval."""
 
-    with patch("bbs-pipeline.app.middleware.get_cache", redis_fixture):
+    with patch("scholarag.app.middleware.get_cache", redis_fixture):
         override_ds_client_with_redis()
         override_rts()
         # First time to put in the cache
@@ -472,7 +472,7 @@ def test_caching_article_count(app_client, redis_fixture):
         "aggregations": {"article_count": {"value": 10}}
     }
 
-    with patch("bbs-pipeline.app.middleware.get_cache", redis_fixture):
+    with patch("scholarag.app.middleware.get_cache", redis_fixture):
         # First time to put in the cache
         response = app_client.get(
             "/retrieval/article_count",
@@ -533,7 +533,7 @@ def test_caching_article_listing(app_client, redis_fixture, mock_http_calls):
         "pages": 1,
     }
 
-    with patch("bbs-pipeline.app.middleware.get_cache", redis_fixture):
+    with patch("scholarag.app.middleware.get_cache", redis_fixture):
         # First time to put in the cache
         response = app_client.get(
             "/retrieval/article_listing",
@@ -613,7 +613,7 @@ async def test_user_verification(monkeypatch, httpx_mock, path):
     fake_callable = AsyncMock(return_value="test")
 
     with (
-        patch("bbs-pipeline.app.middleware.get_settings", lambda: test_settings),
+        patch("scholarag.app.middleware.get_settings", lambda: test_settings),
     ):
         # Test when the token is wrong.
         response = await get_and_set_cache(request, fake_callable)

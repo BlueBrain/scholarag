@@ -15,7 +15,7 @@ def test_semantic_search_real(monkeypatch):
     fake_client_instance.bm25_search.return_value = [{"text": "bbb"}]
 
     monkeypatch.setattr(
-        "bbs-pipeline.services.retrieval.BaseSearch",
+        "scholarag.services.retrieval.BaseSearch",
         Mock(return_value=fake_client_instance),
     )
 
@@ -38,7 +38,7 @@ def test_bm25_with_long_paragraphs(monkeypatch):
     ]
 
     monkeypatch.setattr(
-        "bbs-pipeline.services.retrieval.BaseSearch",
+        "scholarag.services.retrieval.BaseSearch",
         Mock(return_value=fake_client_instance),
     )
 
@@ -61,7 +61,7 @@ async def test_async_semantic_search_real(monkeypatch):
     fake_client_instance.bm25_search.return_value = [{"text": "bbb"}]
 
     monkeypatch.setattr(
-        "bbs-pipeline.services.retrieval.AsyncBaseSearch",
+        "scholarag.services.retrieval.AsyncBaseSearch",
         Mock(return_value=fake_client_instance),
     )
 

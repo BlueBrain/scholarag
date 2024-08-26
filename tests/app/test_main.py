@@ -42,16 +42,16 @@ def test_startup(caplog, monkeypatch):
     with TestClient(app) as test_client:
         test_client.get("/healthz")
     assert caplog.record_tuples[0][::2] == (
-        "bbs-pipeline.app.dependencies",
+        "scholarag.app.dependencies",
         "Reading the environment and instantiating settings",
     )
     assert caplog.record_tuples[1][::2] == (
-        "bbs-pipeline.app.middleware",
+        "scholarag.app.middleware",
         "The caching service is disabled.",
     )
 
     assert (
-        logging.getLevelName(logging.getLogger("bbs-pipeline").getEffectiveLevel())
+        logging.getLevelName(logging.getLogger("scholarag").getEffectiveLevel())
         == "DEBUG"
     )
     assert logging.getLevelName(logging.getLogger("app").getEffectiveLevel()) == "DEBUG"

@@ -87,7 +87,7 @@ async def lifespan(fastapi_app: FastAPI) -> AsyncContextManager[None]:  # type: 
     get_cache(app_settings)
 
     logging.getLogger().setLevel(app_settings.logging.external_packages.upper())
-    logging.getLogger("bbs-pipeline").setLevel(app_settings.logging.level.upper())
+    logging.getLogger("scholarag").setLevel(app_settings.logging.level.upper())
     logging.getLogger("app").setLevel(app_settings.logging.level.upper())
 
     yield

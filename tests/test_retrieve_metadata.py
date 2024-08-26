@@ -682,17 +682,17 @@ async def test_metadata_retriever_external_apis(get_testing_async_ds_client):
 
     with (
         mock.patch(
-            "bbs-pipeline.retrieve_metadata.get_impact_factors"  # not interesting for this test
+            "scholarag.retrieve_metadata.get_impact_factors"  # not interesting for this test
         ),
         mock.patch(
-            "bbs-pipeline.retrieve_metadata.recreate_abstract"  # not interesting for this test
+            "scholarag.retrieve_metadata.recreate_abstract"  # not interesting for this test
         ),
         mock.patch(
-            "bbs-pipeline.retrieve_metadata.get_citation_count",
+            "scholarag.retrieve_metadata.get_citation_count",
             new=get_citation_count,
         ),
         mock.patch(
-            "bbs-pipeline.retrieve_metadata.get_journal_name",
+            "scholarag.retrieve_metadata.get_journal_name",
             new=get_journal_name,
         ),
     ):

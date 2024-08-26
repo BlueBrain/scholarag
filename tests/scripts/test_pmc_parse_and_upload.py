@@ -83,11 +83,11 @@ async def test_pmc_parse_and_upload(httpx_mock, get_testing_async_ds_client):
     )
     with (
         patch(
-            "bbs-pipeline.scripts.pmc_parse_and_upload.get_session",
+            "scholarag.scripts.pmc_parse_and_upload.get_session",
             return_value=mocked_session,
         ),
         patch(
-            "bbs-pipeline.scripts.pmc_parse_and_upload.setup_parsing_ds",
+            "scholarag.scripts.pmc_parse_and_upload.setup_parsing_ds",
             return_value=(ds_client, ParsingService()),
         ),
     ):
