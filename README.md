@@ -199,7 +199,7 @@ List of available endpoints:
 * `/pypdf_pdf`: Parses PDFs without keeping the structure of the document.
 * `/grobid_pdf`: Parses PDFs keeping the structure of the document.
 
-## Funding and Acknowledgment
+## Funding and Acknowledgement
 
 The development of this software was supported by funding to the Blue Brain Project, a research center of the École polytechnique fédérale de Lausanne (EPFL), from the Swiss government’s ETH Board of the Swiss Federal Institutes of Technology.
 
