@@ -6,7 +6,7 @@ A Retrieval Augmented Generation (RAG) API meant for scientific literature, whic
 1. [Setup](#setup)
 2. [Database](#database)
 3. [ETL Parsing](#etl-parsing)
-4. [Funding & Acknoledgement](#funding-&-acknowledgement)
+4. [Funding & Acknowledgement](#funding-&-acknowledgement)
 
 ## Quickstart
 
