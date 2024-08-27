@@ -6,7 +6,7 @@ A Retrieval Augmented Generation (RAG) API meant for scientific literature, whic
 1. [Setup](#setup)
 2. [Database](#database)
 3. [ETL Parsing](#etl-parsing)
-4. [Funding & Acknowledgement](#funding-&-acknowledgement)
+4. [Funding and Acknowledgement](#funding-and-acknowledgement)
 
 ## Quickstart
 
@@ -199,7 +199,7 @@ List of available endpoints:
 * `/pypdf_pdf`: Parses PDFs without keeping the structure of the document.
 * `/grobid_pdf`: Parses PDFs keeping the structure of the document.
 
-# Funding & Acknowledgment
+## Funding and Acknowledgment
 
 The development of this software was supported by funding to the Blue Brain Project, a research center of the École polytechnique fédérale de Lausanne (EPFL), from the Swiss government’s ETH Board of the Swiss Federal Institutes of Technology.
 
