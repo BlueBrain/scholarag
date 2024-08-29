@@ -87,9 +87,7 @@ def select_relevant_settings(settings: Settings, path: str) -> list[str]:
         return [settings.model_dump_json()]
 
 
-async def custom_key_builder(
-    request: Request, settings: Settings, version: str
-) -> str:
+async def custom_key_builder(request: Request, settings: Settings, version: str) -> str:
     """Build the unique caching key based on the request and the settings.
 
     Parameters
