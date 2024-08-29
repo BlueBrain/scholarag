@@ -191,9 +191,7 @@ async def get_and_set_cache(
     httpx_client = await anext(get_httpx_client(settings))
     # If raises HTTPException return error as json.
     try:
-        _ = await get_user_id(
-            token=token, settings=settings, httpx_client=httpx_client
-        )
+        _ = await get_user_id(token=token, settings=settings, httpx_client=httpx_client)
     except HTTPException as e:
         return JSONResponse(status_code=e.status_code, content=e.detail)
 
