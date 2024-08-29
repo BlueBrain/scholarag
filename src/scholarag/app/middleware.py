@@ -8,15 +8,14 @@ import time
 from functools import cache
 from typing import Any, Callable
 
-from fastapi import HTTPException, Request, Response
-from fastapi.responses import JSONResponse
+from fastapi import Request, Response
 from redis import Redis
 from redis.asyncio import Redis as AsyncRedis
 from redis.exceptions import ConnectionError as RedisConnectionError
 
 from scholarag import __version__
 from scholarag.app.config import Settings
-from scholarag.app.dependencies import get_httpx_client, get_settings, get_user_id
+from scholarag.app.dependencies import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -255,7 +254,6 @@ async def get_and_set_cache(
                     ),  # To avoid secrets being 'unjsonable'
                     "version": __version__,
                     "path": request.scope["path"],
-                    "user_sub": user,
                 },
             }
             cached["content"] = cached["content"].split("<bbs_json_error>")[-1]
