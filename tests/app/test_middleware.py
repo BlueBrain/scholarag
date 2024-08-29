@@ -2,6 +2,7 @@ from datetime import datetime
 from unittest.mock import AsyncMock, PropertyMock, patch
 
 import pytest
+from fastapi import HTTPException
 from fastapi.requests import Request
 from fastapi.responses import Response
 from scholarag.app.config import Settings
@@ -15,6 +16,7 @@ from scholarag.app.middleware import (
     strip_path_prefix,
 )
 from starlette.datastructures import MutableHeaders
+from starlette.status import HTTP_401_UNAUTHORIZED
 from starlette.types import Message
 
 from app.dependencies_overrides import override_ds_client_with_redis, override_rts
@@ -553,3 +555,75 @@ def test_request_id(app_client):
     response = app_client.get("/retrieval/article_listing")
     assert isinstance(response.headers["x-request-id"], str)
     assert len(response.headers["x-request-id"]) == 32
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/qa/generative",
+        "/qa/passthrough",
+        "/qa/streamed_generative",
+        "/suggestions/journal",
+        "/suggestions/author",
+        "/suggestions/article_types",
+        "/retrieval/",
+        "/retrieval/article_count",
+        "/retrieval/article_listing",
+    ],
+)
+@pytest.mark.asyncio
+async def test_user_verification(monkeypatch, httpx_mock, path):
+    monkeypatch.setenv("SCHOLARAG__KEYCLOAK__VALIDATE_TOKEN", "True")
+    monkeypatch.setenv("SCHOLARAG__KEYCLOAK__ISSUER", "http://fake_issuer")
+    httpx_mock.add_exception(
+        exception=HTTPException(
+            status_code=HTTP_401_UNAUTHORIZED, detail="Invalid token."
+        ),
+        url="http://fake_issuer/protocol/openid-connect/userinfo",
+    )
+
+    request = Request(
+        scope={
+            "type": "http",
+            "query_string": "Amazing question",
+            "path": path,
+            "method": "POST",
+            "headers": {},
+        },
+    )
+
+    fake_response = {"sub": "12345"}
+
+    async def get_request_body():
+        return b"""body"""
+
+    request.body = get_request_body
+
+    test_settings = Settings(
+        db={
+            "db_type": "elasticsearch",
+            "index_paragraphs": "foo",
+            "index_journals": "bar",
+            "host": "host.com",
+            "port": 1515,
+        },
+    )
+
+    fake_callable = AsyncMock(return_value="test")
+
+    with (
+        patch("scholarag.app.middleware.get_settings", lambda: test_settings),
+    ):
+        # Test when the token is wrong.
+        response = await get_and_set_cache(request, fake_callable)
+
+        assert response.body == b'"Invalid token."'
+
+        # Test when the token is valid.
+        httpx_mock.add_response(
+            json=fake_response,
+            url="http://fake_issuer/protocol/openid-connect/userinfo",
+        )
+        response = await get_and_set_cache(request, fake_callable)
+
+        assert response == "test"

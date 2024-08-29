@@ -8,14 +8,15 @@ import time
 from functools import cache
 from typing import Any, Callable
 
-from fastapi import Request, Response
+from fastapi import HTTPException, Request, Response
+from fastapi.responses import JSONResponse
 from redis import Redis
 from redis.asyncio import Redis as AsyncRedis
 from redis.exceptions import ConnectionError as RedisConnectionError
 
 from scholarag import __version__
 from scholarag.app.config import Settings
-from scholarag.app.dependencies import get_settings
+from scholarag.app.dependencies import get_httpx_client, get_settings, get_user_id
 
 logger = logging.getLogger(__name__)
 
@@ -183,6 +184,18 @@ async def get_and_set_cache(
         settings = request.app.dependency_overrides[get_settings]()
     else:
         settings = get_settings()
+
+    token = request.headers.get("Authorization")
+    if token:
+        token = token.rpartition(" ")[-1]
+    httpx_client = await anext(get_httpx_client(settings))
+    # If raises HTTPException return error as json.
+    try:
+        _ = await get_user_id(
+            token=token, settings=settings, httpx_client=httpx_client
+        )
+    except HTTPException as e:
+        return JSONResponse(status_code=e.status_code, content=e.detail)
 
     if request.scope["path"] not in to_cache:
         response = await call_next(request)
