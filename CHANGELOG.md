@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Put SSL certification for OS in the application by default.
 
+### Removed
+- Remove `user-id` from the caching key building.
+
 ## [v0.0.4]
 
 ### Added
