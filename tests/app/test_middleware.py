@@ -2,7 +2,6 @@ from datetime import datetime
 from unittest.mock import AsyncMock, PropertyMock, patch
 
 import pytest
-from fastapi import HTTPException
 from fastapi.requests import Request
 from fastapi.responses import Response
 from scholarag.app.config import Settings
@@ -16,7 +15,6 @@ from scholarag.app.middleware import (
     strip_path_prefix,
 )
 from starlette.datastructures import MutableHeaders
-from starlette.status import HTTP_401_UNAUTHORIZED
 from starlette.types import Message
 
 from app.dependencies_overrides import override_ds_client_with_redis, override_rts
@@ -555,4 +553,3 @@ def test_request_id(app_client):
     response = app_client.get("/retrieval/article_listing")
     assert isinstance(response.headers["x-request-id"], str)
     assert len(response.headers["x-request-id"]) == 32
-
