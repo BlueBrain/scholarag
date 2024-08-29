@@ -89,7 +89,7 @@ def select_relevant_settings(settings: Settings, path: str) -> list[str]:
 
 
 async def custom_key_builder(
-    request: Request, settings: Settings, version: str, user: str
+    request: Request, settings: Settings, version: str
 ) -> str:
     """Build the unique caching key based on the request and the settings.
 
@@ -109,7 +109,7 @@ async def custom_key_builder(
     relevant_settings = select_relevant_settings(settings, request.scope["path"])
     request_body = await request.body()
     cache_key = hashlib.md5(
-        f"{version}:{request.query_params}:{request_body.decode('utf-8')}:{':'.join(relevant_settings)}:{user}".encode(),
+        f"{version}:{request.query_params}:{request_body.decode('utf-8')}:{':'.join(relevant_settings)}".encode(),
         usedforsecurity=False,
     ).hexdigest()
     return f"{request.scope['path']}:{cache_key}"
@@ -187,18 +187,6 @@ async def get_and_set_cache(
     else:
         settings = get_settings()
 
-    token = request.headers.get("Authorization")
-    if token:
-        token = token.rpartition(" ")[-1]
-    httpx_client = await anext(get_httpx_client(settings))
-    # If raises HTTPException return error as json.
-    try:
-        user = await get_user_id(
-            token=token, settings=settings, httpx_client=httpx_client
-        )
-    except HTTPException as e:
-        return JSONResponse(status_code=e.status_code, content=e.detail)
-
     if request.scope["path"] not in to_cache:
         response = await call_next(request)
         return response
@@ -213,7 +201,7 @@ async def get_and_set_cache(
         return response
 
     request_key = await custom_key_builder(
-        request=request, settings=settings, version=__version__, user=user
+        request=request, settings=settings, version=__version__
     )
 
     # If the key exists in the db, return its result.
