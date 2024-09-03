@@ -89,8 +89,8 @@ async def stream_response(
             contexts=contexts_text,
             system_prompt=settings.generative.system_prompt.get_secret_value(),
         )
-        # Get the first chunk and resulting parsing
-        _, parsed = await anext(generator)
+
+        parsed: dict[str, str | bool | list[int]] | GenerativeQAOutput = {}
         # While the model didn't say if it has answer or not, keep consuming
         while parsed.get("has_answer") is None:  # type: ignore
             _, parsed = await anext(generator)
@@ -111,17 +111,20 @@ async def stream_response(
             parsed_output = GenerativeQAOutput(
                 has_answer=False, answer="", paragraphs=[]
             )
-        # Else, we stream the tokens (without the 'answer:')
+        # Else, we stream the tokens.
+        # First ensure not streaming '"answer":'
         else:
             accumulated_text = ""
             while '"answer":' not in accumulated_text:
                 chunk, _ = await anext(generator)
                 accumulated_text += chunk
-            # Finally we stream the answer
+            # Then we stream the answer
             async for chunk, parsed in generator:
                 # While the answer has not finished streaming we yield the tokens.
                 if parsed.get("answer") is None:  # type: ignore
                     yield chunk
+                # Stop streaming as soon as the answer is complete
+                # (i.e. don't stream the paragraph ids)
                 else:
                     break
 
@@ -142,7 +145,7 @@ async def stream_response(
         )
 
     try:
-        # Extract the final pydantic class
+        # Extract the final pydantic class (last item in generator)
         parsed_output = await anext(
             (
                 parsed
@@ -162,13 +165,13 @@ async def stream_response(
                     "status_code": 404,
                     "code": ErrorCode.NO_ANSWER_FOUND.value,
                     "detail": (
-                        "The LLM did not manage to answer the question based on the provided contexts."
+                        "The LLM encountered an error when answering the question."
                     ),
                 }
             }
         )
     try:
-        # We "raise" the finish_reason
+        # Finally we "raise" the finish_reason
         await anext(generator)
     except RuntimeError as err:
         finish_reason: str = err.args[0]
@@ -189,6 +192,7 @@ async def stream_response(
                             " retriever_k value by 1 or 2 depending of whether you are"
                             " using the reranker or not."
                         ),
+                        "raw_answer": parsed_output.answer,
                     }
                 }
             )

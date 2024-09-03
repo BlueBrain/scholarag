@@ -15,16 +15,14 @@ logger = logging.getLogger(__name__)
 class GenerativeQAOutput(BaseModel):
     """Base class for the expected LLM output."""
 
-    has_answer: bool  # Here to prevent streaming errors.
+    has_answer: bool  # Here to prevent streaming errors
     answer: str
     paragraphs: list[int]
 
 
-# SOURCES_SEPARATOR = "<bbs_sources>"
-# ERROR_SEPARATOR = "<bbs_error>"
 MESSAGES = [
     {
-        "role": "system",
+        "role": "system",  # This one can be overriden through env var
         "content": """Given the following extracted parts of a long document and a question, create a final answer with references to the relevant paragraphs.
     If you don't know the answer, just say that you don't know, don't try to make up an answer, leave the paragraphs as an empty list and set `has_answer` to False.
 
@@ -54,7 +52,7 @@ MESSAGES = [
     """,
     },
     {
-        "role": "user",
+        "role": "user",  # This one cannot be overriden
         "content": """QUESTION: {question}
     =========
     {summaries}
@@ -101,7 +99,7 @@ class GenerativeQAWithSources(BaseModel):
         contexts
             Contexts to use to answer the question.
         system_prompt
-            System prompt for the LLM. Leave None for default
+            System prompt for the LLM. Leave None for default.
 
         Returns
         -------
@@ -227,7 +225,7 @@ class GenerativeQAWithSources(BaseModel):
         Yields
         ------
         chunks, parsed
-            Chunks of the answer, partially parsed json.
+            Chunks of the answer, (partially) parsed json.
 
         Returns
         -------
@@ -260,12 +258,15 @@ class GenerativeQAWithSources(BaseModel):
             response_format=GenerativeQAOutput,
         ) as stream:
             for event in stream:
+                # Inbetween chunks we have accumulated text -> skip
                 if isinstance(event, ContentDeltaEvent):
                     continue
+                # At the end we get the parsed pydantic class
                 if isinstance(event, ContentDoneEvent):
                     if event.parsed is not None:  # mypy
                         yield "", event.parsed
                         continue
+
                 if isinstance(event, ChunkEvent):  # mypy
                     # Only the last chunk contains the usage.
                     if not event.chunk.usage:
@@ -352,12 +353,15 @@ class GenerativeQAWithSources(BaseModel):
             response_format=GenerativeQAOutput,
         ) as stream:
             async for event in stream:
+                # Inbetween chunks we have accumulated text -> skip
                 if isinstance(event, ContentDeltaEvent):
                     continue
+                # At the end we get the parsed pydantic class
                 if isinstance(event, ContentDoneEvent):
                     if event.parsed is not None:  # mypy
                         yield "", event.parsed
                         continue
+
                 if isinstance(event, ChunkEvent):  # mypy
                     # Only the last chunk contains the usage.
                     if not event.chunk.usage:
