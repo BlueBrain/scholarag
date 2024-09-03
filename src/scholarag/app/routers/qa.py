@@ -293,7 +293,7 @@ async def generative_qa(
         **{
             "query": request.query,
             "contexts": contexts_text,
-            "messages": settings.generative.system_prompt.get_secret_value(),
+            "system_prompt": settings.generative.system_prompt.get_secret_value(),
         },
     )
     try:
@@ -325,6 +325,7 @@ async def generative_qa(
                     " its answer. Please decrease the reranker_k or retriever_k value"
                     " by 1 or 2 depending of whether you are using the reranker or not."
                 ),
+                "answer": answer.answer,
             },
         )
 
@@ -334,6 +335,7 @@ async def generative_qa(
             detail={
                 "code": ErrorCode.NO_ANSWER_FOUND.value,
                 "detail": "The LLM did not provide any source to answer the question.",
+                "answer": answer.answer,
             },
         )
     else:
@@ -373,7 +375,11 @@ async def generative_qa(
                     }
                 )
             )
-    output = {"answer": answer.answer, "paragraphs": answer.paragraphs, "metadata": metadata}
+    output = {
+        "answer": answer.answer,
+        "paragraphs": answer.paragraphs,
+        "metadata": metadata,
+    }
     logger.info(f"Total time to generate a complete answer: {time.time() - start}")
     return GenerativeQAResponse(**output)
 

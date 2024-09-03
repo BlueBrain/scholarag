@@ -265,6 +265,7 @@ async def get_and_set_cache(
                     "path": request.scope["path"],
                 },
             }
+
             cached["content"] = cached["content"].split("<bbs_json_error>")[-1]
             cached["content"] = cached["content"].split("<bbs_json_data>")[-1]
 

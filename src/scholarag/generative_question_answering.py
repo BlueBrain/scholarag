@@ -1,29 +1,33 @@
 """Generative question answering with sources."""
+
 import copy
 import logging
-import re
 from typing import AsyncGenerator, Generator
 
 from openai import AsyncOpenAI, OpenAI
+from openai.lib.streaming.chat import ChunkEvent, ContentDeltaEvent, ContentDoneEvent
 from openai.types.completion_usage import CompletionUsage
-from openai.lib.streaming.chat import ContentDeltaEvent, ContentDoneEvent
 from pydantic import BaseModel, ConfigDict
 
 logger = logging.getLogger(__name__)
 
+
 class GenerativeQAOutput(BaseModel):
     """Base class for the expected LLM output."""
 
-    has_answer: bool # Here to prevent streaming errors.
+    has_answer: bool  # Here to prevent streaming errors.
     answer: str
     paragraphs: list[int]
+
 
 # SOURCES_SEPARATOR = "<bbs_sources>"
 # ERROR_SEPARATOR = "<bbs_error>"
 MESSAGES = [
-    {"role": "system", "content": """Given the following extracted parts of a long document and a question, create a final answer with references to the relevant paragraphs.
+    {
+        "role": "system",
+        "content": """Given the following extracted parts of a long document and a question, create a final answer with references to the relevant paragraphs.
     If you don't know the answer, just say that you don't know, don't try to make up an answer, leave the paragraphs as an empty list and set `has_answer` to False.
-     
+
     QUESTION: Which state/country's law governs the interpretation of the contract?
     =========
     Content: This Agreement is governed by English law and the parties submit to the exclusive jurisdiction of the English courts in  relation to any dispute (contractual or non-contractual) concerning this Agreement save that either party may apply to any court for an  injunction or other relief to protect its Intellectual Property Rights.
@@ -47,13 +51,16 @@ MESSAGES = [
     Source: 34
     =========
     FINAL ANSWER: {'has_answer': False, 'answer': The president did not mention Michael Jackson., 'paragraphs': []}
-    """},
-    {"role": "user", "content": 
-    """QUESTION: {question}
+    """,
+    },
+    {
+        "role": "user",
+        "content": """QUESTION: {question}
     =========
     {summaries}
     =========
-    FINAL ANSWER:"""}
+    FINAL ANSWER:""",
+    },
 ]
 
 
@@ -107,13 +114,15 @@ class GenerativeQAWithSources(BaseModel):
         messages = copy.deepcopy(MESSAGES)
         if system_prompt:
             messages[0]["content"] = system_prompt
-        messages[1]["content"] = messages[1]["content"].format(question=query,summaries=docs)
+        messages[1]["content"] = messages[1]["content"].format(
+            question=query, summaries=docs
+        )
 
         # Run the chain.
         logger.info("Sending generative reader request.")
         if isinstance(self.client, OpenAI):
             response = self.client.beta.chat.completions.parse(
-                messages=messages,
+                messages=messages,  # type: ignore
                 model=self.model,
                 temperature=self.temperature,
                 max_tokens=self.max_tokens,
@@ -163,13 +172,15 @@ class GenerativeQAWithSources(BaseModel):
         messages = copy.deepcopy(MESSAGES)
         if system_prompt:
             messages[0]["content"] = system_prompt
-        messages[1]["content"] = messages[1]["content"].format(question=query,summaries=docs)
+        messages[1]["content"] = messages[1]["content"].format(
+            question=query, summaries=docs
+        )
 
         # Run the chain.
         logger.info("Sending generative reader request.")
         if isinstance(self.client, AsyncOpenAI):
             response = await self.client.beta.chat.completions.parse(
-                messages=messages,
+                messages=messages,  # type: ignore
                 model=self.model,
                 temperature=self.temperature,
                 max_tokens=self.max_tokens,
@@ -197,7 +208,11 @@ class GenerativeQAWithSources(BaseModel):
         query: str,
         contexts: list[str],
         system_prompt: str | None = None,
-    ) -> Generator[str, None, str | None]:
+    ) -> Generator[
+        tuple[str, dict[str, bool | str | list[int]] | GenerativeQAOutput],
+        None,
+        str | None,
+    ]:
         """Answer the question given the contexts.
 
         Parameters
@@ -210,7 +225,7 @@ class GenerativeQAWithSources(BaseModel):
             System prompt for the LLM. Leave None for default
 
         Yields
-        -------
+        ------
         chunks, parsed
             Chunks of the answer, partially parsed json.
 
@@ -224,7 +239,9 @@ class GenerativeQAWithSources(BaseModel):
         messages = copy.deepcopy(MESSAGES)
         if system_prompt:
             messages[0]["content"] = system_prompt
-        messages[1]["content"] = messages[1]["content"].format(question=query,summaries=docs)
+        messages[1]["content"] = messages[1]["content"].format(
+            question=query, summaries=docs
+        )
 
         # Run the chain.
         logger.info("Sending generative reader request.")
@@ -235,36 +252,41 @@ class GenerativeQAWithSources(BaseModel):
             )
         finish_reason = None
         with self.client.beta.chat.completions.stream(
-                messages=messages,
-                model=self.model,
-                temperature=self.temperature,
-                max_tokens=self.max_tokens,
-                stream_options={"include_usage": True},
-                response_format=GenerativeQAOutput
-            ) as stream:
+            messages=messages,  # type: ignore
+            model=self.model,
+            temperature=self.temperature,
+            max_tokens=self.max_tokens,
+            stream_options={"include_usage": True},
+            response_format=GenerativeQAOutput,
+        ) as stream:
             for event in stream:
                 if isinstance(event, ContentDeltaEvent):
                     continue
                 if isinstance(event, ContentDoneEvent):
-                    yield event.content, event.parsed
-                    continue
-                # Only the last chunk contains the usage.
-                if not event.chunk.usage:
-                    # case where a token is streamed
-                    if event.chunk.choices[0].delta.content:
-                        yield event.chunk.choices[0].delta.content, event.snapshot.choices[0].message.parsed
+                    if event.parsed is not None:  # mypy
+                        yield "", event.parsed
+                        continue
+                if isinstance(event, ChunkEvent):  # mypy
+                    # Only the last chunk contains the usage.
+                    if not event.chunk.usage:
+                        # case where a token is streamed
+                        if event.chunk.choices[0].delta.content:
+                            yield (  # type: ignore
+                                event.chunk.choices[0].delta.content,
+                                event.snapshot.choices[0].message.parsed,
+                            )
+                        else:
+                            # No usage and no token -> finish reason is there.
+                            # The first chunk might be empty and have no finish reason,
+                            # it will be overriden later anyway.
+                            finish_reason = event.chunk.choices[0].finish_reason
                     else:
-                        # No usage and no token -> finish reason is there.
-                        # The first chunk might be empty and have no finish reason,
-                        # it will be overriden later anyway.
-                        finish_reason = event.chunk.choices[0].finish_reason
-                else:
-                    logger.info(
-                        "Information about our OpenAI request:\n Input tokens:"
-                        f" {event.chunk.usage.prompt_tokens}\nOutput tokens:"
-                        f" {event.chunk.usage.completion_tokens}\nTotal tokens:"
-                        f" {event.chunk.usage.total_tokens}\nFinish reason: {finish_reason}"
-                    )
+                        logger.info(
+                            "Information about our OpenAI request:\n Input tokens:"
+                            f" {event.chunk.usage.prompt_tokens}\nOutput tokens:"
+                            f" {event.chunk.usage.completion_tokens}\nTotal tokens:"
+                            f" {event.chunk.usage.total_tokens}\nFinish reason: {finish_reason}"
+                        )
 
                 # In sync generators you can return a value, which will raise StopIteration and the returned
                 # value can be retrieved as such:
@@ -285,7 +307,9 @@ class GenerativeQAWithSources(BaseModel):
         query: str,
         contexts: list[str],
         system_prompt: str | None = None,
-    ) -> AsyncGenerator[str | dict[str, bool | str | list[int]] | GenerativeQAOutput, None]:
+    ) -> AsyncGenerator[
+        tuple[str, dict[str, bool | str | list[int]] | GenerativeQAOutput], None
+    ]:
         """Answer the question given the contexts.
 
         Parameters
@@ -307,8 +331,9 @@ class GenerativeQAWithSources(BaseModel):
         messages = copy.deepcopy(MESSAGES)
         if system_prompt:
             messages[0]["content"] = system_prompt
-        messages[1]["content"] = messages[1]["content"].format(question=query,summaries=docs)
-
+        messages[1]["content"] = messages[1]["content"].format(
+            question=query, summaries=docs
+        )
 
         # Run the chain.
         logger.info("Sending generative reader request.")
@@ -319,39 +344,44 @@ class GenerativeQAWithSources(BaseModel):
             )
         finish_reason = None
         async with self.client.beta.chat.completions.stream(
-                messages=messages,
-                model=self.model,
-                temperature=self.temperature,
-                max_tokens=self.max_tokens,
-                stream_options={"include_usage": True},
-                response_format=GenerativeQAOutput
-            ) as stream:
+            messages=messages,  # type: ignore
+            model=self.model,
+            temperature=self.temperature,
+            max_tokens=self.max_tokens,
+            stream_options={"include_usage": True},
+            response_format=GenerativeQAOutput,
+        ) as stream:
             async for event in stream:
                 if isinstance(event, ContentDeltaEvent):
                     continue
                 if isinstance(event, ContentDoneEvent):
-                    yield event.content, event.parsed
-                    continue
-                # Only the last chunk contains the usage.
-                if not event.chunk.usage:
-                    # case where a token is streamed
-                    if event.chunk.choices[0].delta.content:
-                        yield event.chunk.choices[0].delta.content, event.snapshot.choices[0].message.parsed
+                    if event.parsed is not None:  # mypy
+                        yield "", event.parsed
+                        continue
+                if isinstance(event, ChunkEvent):  # mypy
+                    # Only the last chunk contains the usage.
+                    if not event.chunk.usage:
+                        # case where a token is streamed
+                        if event.chunk.choices[0].delta.content:
+                            yield (  # type: ignore
+                                event.chunk.choices[0].delta.content,
+                                event.snapshot.choices[0].message.parsed,
+                            )
+                        else:
+                            # No usage and no token -> finish reason is there.
+                            # The first chunk might be empty and have no finish reason,
+                            # it will be overriden later anyway.
+                            finish_reason = event.chunk.choices[0].finish_reason
                     else:
-                        # No usage and no token -> finish reason is there.
-                        # The first chunk might be empty and have no finish reason,
-                        # it will be overriden later anyway.
-                        finish_reason = event.chunk.choices[0].finish_reason
-                else:
-                    logger.info(
-                        "Information about our OpenAI request:\n Input tokens:"
-                        f" {event.chunk.usage.prompt_tokens}\nOutput tokens:"
-                        f" {event.chunk.usage.completion_tokens}\nTotal tokens:"
-                        f" {event.chunk.usage.total_tokens}\nFinish reason: {finish_reason}"
-                    )
+                        logger.info(
+                            "Information about our OpenAI request:\n Input tokens:"
+                            f" {event.chunk.usage.prompt_tokens}\nOutput tokens:"
+                            f" {event.chunk.usage.completion_tokens}\nTotal tokens:"
+                            f" {event.chunk.usage.total_tokens}\nFinish reason: {finish_reason}"
+                        )
         # It is considered a syntax error to return in an async iterator. This is a hack to do it anyway.
         if finish_reason:
-            yield finish_reason
+            raise RuntimeError(finish_reason)
 
     @staticmethod
     def _process_retrieved_contexts(contexts: list[str]) -> str:
