@@ -84,7 +84,7 @@ class SettingsOpenAI(BaseModel):
     """OpenAI settings."""
 
     token: SecretStr | None = None
-    model: str = "gpt-3.5-turbo"
+    model: str = "gpt-4o-mini"
     temperature: float = 0
     max_tokens: int | None = None
 

@@ -104,7 +104,7 @@ class GenerativeQAWithSources(BaseModel):
         Returns
         -------
         generated_text, finish_reason
-            Answers to the question (in theory), reason for the LLM to stop
+            Answers to the question (in theory), reason for the LLM to stop.
         """
         # Put the documents in the prompt with the correct formats
         docs = self._process_retrieved_contexts(contexts)
@@ -158,12 +158,12 @@ class GenerativeQAWithSources(BaseModel):
         contexts
             Contexts to use to answer the question.
         system_prompt
-            System prompt for the LLM. Leave None for default
+            System prompt for the LLM. Leave None for default.
 
         Returns
         -------
         generated_text, finish_reason
-            Answers to the question (in theory), reason for the LLM to stop
+            Answers to the question (in theory), reason for the LLM to stop.
         """
         # Put the documents in the prompt with the correct formats.
         docs = self._process_retrieved_contexts(contexts)
