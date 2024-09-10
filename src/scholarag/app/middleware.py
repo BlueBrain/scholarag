@@ -6,10 +6,10 @@ import json
 import logging
 import time
 from functools import cache
-from typing import Any, Callable
+from typing import Any, Callable, AsyncGenerator
 
 from fastapi import HTTPException, Request, Response
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from redis import Redis
 from redis.asyncio import Redis as AsyncRedis
 from redis.exceptions import ConnectionError as RedisConnectionError
@@ -145,6 +145,45 @@ async def strip_path_prefix(
     return await call_next(request)
 
 
+async def set_cache(response: Response | StreamingResponse,
+                        body: bytes, settings: Settings, request: Request, 
+                        redis: AsyncRedis, request_key: str) -> None: 
+
+    # Prepare the response and add the headers.
+    response = {
+        "content": body.decode("utf-8"),
+        "status_code": response.status_code,
+        "headers": dict(response.headers),
+        "media_type": response.media_type,
+    }
+    response["headers"]["X-fastapi-cache"] = "Miss"
+
+    request_body = await request.body()
+    cached = {
+        **response,
+        "state": {
+            "request_body": (
+                json.loads(request_body.decode("utf-8")) if request_body else ""
+            ),
+            "settings": json.loads(
+                settings.model_dump_json()
+            ),  # To avoid secrets being 'unjsonable'
+            "version": __version__,
+            "path": request.scope["path"],
+        },
+    }
+    cached["content"] = cached["content"].split("<bbs_json_error>")[-1]
+    cached["content"] = cached["content"].split("<bbs_json_data>")[-1]
+
+    cached["content"] = json.loads(cached["content"])
+
+    sec_time = datetime.timedelta(days=settings.redis.expiry)
+
+    # Cache the response unless specified otherwise.
+    await redis.set(request_key, json.dumps(cached), ex=sec_time)
+    logger.info(f"Stored request in cache with key {request_key}")
+
+
 async def get_and_set_cache(
     request: Request, call_next: Callable[[Any], Any]
 ) -> Response:
@@ -237,45 +276,30 @@ async def get_and_set_cache(
     else:
         response = await call_next(request)
         if request.headers.get("cache-control") not in ("no-cache", "no-store"):
-            # One cannot directly get the body, it is an async iterator.
-            body = b""
-            async for chunk in response.body_iterator:
-                body += chunk
 
-            # Prepare the response and add the headers.
-            response = {
-                "content": body.decode("utf-8"),
-                "status_code": response.status_code,
-                "headers": dict(response.headers),
-                "media_type": response.media_type,
-            }
-            response["headers"]["X-fastapi-cache"] = "Miss"
+            breakpoint()
+            if isinstance(response, StreamingResponse):
+                async def stream_response() -> AsyncGenerator[bytes, None]: 
+                    body = b""
+                    async for chunk in response.body_iterator:
+                        body += chunk
+                        yield chunk
+                    await set_cache(response=response, body=body,
+                               settings=settings, request=request,
+                                 redis=redis, request_key=request_key )
+                    
+                return StreamingResponse(content=stream_response(),status_code=response.status_code,
+                                        headers=response.headers, media_type=response.media_type)
+            else: 
+                # One cannot directly get the body, it is an async iterator.
+                body = b""
+                async for chunk in response.body_iterator:
+                    body += chunk
+                await set_cache(response=response, body=body,
+                               settings=settings, request=request,
+                                 redis=redis, request_key=request_key )
 
-            request_body = await request.body()
-            cached = {
-                **response,
-                "state": {
-                    "request_body": (
-                        json.loads(request_body.decode("utf-8")) if request_body else ""
-                    ),
-                    "settings": json.loads(
-                        settings.model_dump_json()
-                    ),  # To avoid secrets being 'unjsonable'
-                    "version": __version__,
-                    "path": request.scope["path"],
-                },
-            }
-            cached["content"] = cached["content"].split("<bbs_json_error>")[-1]
-            cached["content"] = cached["content"].split("<bbs_json_data>")[-1]
-
-            cached["content"] = json.loads(cached["content"])
-
-            sec_time = datetime.timedelta(days=settings.redis.expiry)
-
-            # Cache the response unless specified otherwise.
-            await redis.set(request_key, json.dumps(cached), ex=sec_time)
-            logger.info(f"Stored request in cache with key {request_key}")
-
-            return Response(**response)
+                return Response(content=body,status_code=response.status_code,
+                                        headers=response.headers, media_type=response.media_type)
         else:
             return response
