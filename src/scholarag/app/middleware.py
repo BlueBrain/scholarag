@@ -6,13 +6,14 @@ import json
 import logging
 import time
 from functools import cache
-from typing import Any, Callable, AsyncGenerator
+from typing import Any, AsyncGenerator, Callable
 
 from fastapi import HTTPException, Request, Response
 from fastapi.responses import JSONResponse, StreamingResponse
 from redis import Redis
 from redis.asyncio import Redis as AsyncRedis
 from redis.exceptions import ConnectionError as RedisConnectionError
+from starlette.middleware.base import _StreamingResponse
 
 from scholarag import __version__
 from scholarag.app.config import Settings
@@ -145,16 +146,37 @@ async def strip_path_prefix(
     return await call_next(request)
 
 
-async def set_cache(response: Response | StreamingResponse,
-                        body: bytes, settings: Settings, request: Request, 
-                        redis: AsyncRedis, request_key: str) -> None: 
+async def set_cache(
+    endpoint_response: _StreamingResponse,
+    body: Any,
+    settings: Settings,
+    request: Request,
+    redis: AsyncRedis[Any],
+    request_key: str,
+) -> None:
+    """Format and set the response in Redis cache.
 
+    Parameters
+    ----------
+    endpoint_response
+        Response returned by the endpoint.
+    body
+        Body of the response.
+    settings
+        App Setttings.
+    request
+        Request sent by the user.
+    redis
+        Redis Client.
+    request_key
+        Redis caching key.
+    """
     # Prepare the response and add the headers.
     response = {
         "content": body.decode("utf-8"),
-        "status_code": response.status_code,
-        "headers": dict(response.headers),
-        "media_type": response.media_type,
+        "status_code": endpoint_response.status_code,
+        "headers": dict(endpoint_response.headers),
+        "media_type": endpoint_response.media_type,
     }
     response["headers"]["X-fastapi-cache"] = "Miss"
 
@@ -276,30 +298,47 @@ async def get_and_set_cache(
     else:
         response = await call_next(request)
         if request.headers.get("cache-control") not in ("no-cache", "no-store"):
+            # FastAPI uses 'StremingResponse' everywhere under the hood.
+            if str(request.url).rpartition("/")[-1] == "streamed_generative":
 
-            breakpoint()
-            if isinstance(response, StreamingResponse):
-                async def stream_response() -> AsyncGenerator[bytes, None]: 
+                async def stream_response() -> AsyncGenerator[bytes, None]:
                     body = b""
                     async for chunk in response.body_iterator:
                         body += chunk
                         yield chunk
-                    await set_cache(response=response, body=body,
-                               settings=settings, request=request,
-                                 redis=redis, request_key=request_key )
-                    
-                return StreamingResponse(content=stream_response(),status_code=response.status_code,
-                                        headers=response.headers, media_type=response.media_type)
-            else: 
-                # One cannot directly get the body, it is an async iterator.
+                    await set_cache(
+                        endpoint_response=response,
+                        body=body,
+                        settings=settings,
+                        request=request,
+                        redis=redis,
+                        request_key=request_key,
+                    )
+
+                return StreamingResponse(
+                    content=stream_response(),
+                    status_code=response.status_code,
+                    headers=response.headers,
+                    media_type=response.media_type,
+                )
+            else:
                 body = b""
                 async for chunk in response.body_iterator:
                     body += chunk
-                await set_cache(response=response, body=body,
-                               settings=settings, request=request,
-                                 redis=redis, request_key=request_key )
+                await set_cache(
+                    endpoint_response=response,
+                    body=body,
+                    settings=settings,
+                    request=request,
+                    redis=redis,
+                    request_key=request_key,
+                )
 
-                return Response(content=body,status_code=response.status_code,
-                                        headers=response.headers, media_type=response.media_type)
+                return Response(
+                    content=body,
+                    status_code=response.status_code,
+                    headers=response.headers,
+                    media_type=response.media_type,
+                )
         else:
             return response
