@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Streaming with cache enabled.
 
+### Changed
+- Switch to cohere reranker v3 and `retriever_k = 500`.
+
 ## [v0.0.5]
 
 ### Changed
