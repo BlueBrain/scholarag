@@ -15,7 +15,7 @@ from scholarag.app.middleware import (
     select_relevant_settings,
     strip_path_prefix,
 )
-from starlette.datastructures import MutableHeaders
+from starlette.datastructures import URL, MutableHeaders
 from starlette.status import HTTP_401_UNAUTHORIZED
 from starlette.types import Message
 
@@ -214,7 +214,7 @@ async def test_get_and_set_cache_with_cache_key_not_in_db(response_body):
             "headers": {},
         },
     )
-
+    request._url = URL("http://testserver/test")
     body = """{"param": "This is request param"}""".encode("utf-8")
 
     async def get_request_body():

@@ -151,7 +151,7 @@ async def set_cache(
     body: Any,
     settings: Settings,
     request: Request,
-    redis: AsyncRedis[Any],
+    redis: "AsyncRedis[Any]",
     request_key: str,
 ) -> None:
     """Format and set the response in Redis cache.
@@ -178,7 +178,6 @@ async def set_cache(
         "headers": dict(endpoint_response.headers),
         "media_type": endpoint_response.media_type,
     }
-    response["headers"]["X-fastapi-cache"] = "Miss"
 
     request_body = await request.body()
     cached = {
@@ -298,7 +297,10 @@ async def get_and_set_cache(
     else:
         response = await call_next(request)
         if request.headers.get("cache-control") not in ("no-cache", "no-store"):
-            # FastAPI uses 'StremingResponse' everywhere under the hood.
+            # moved from set_cache, easier for streaming.
+            response_header = {**response.headers, "X-fastapi-cache": "Miss"}
+
+            # FastAPI uses '_StremingResponse' everywhere under the hood.
             if str(request.url).rpartition("/")[-1] == "streamed_generative":
 
                 async def stream_response() -> AsyncGenerator[bytes, None]:
@@ -318,7 +320,7 @@ async def get_and_set_cache(
                 return StreamingResponse(
                     content=stream_response(),
                     status_code=response.status_code,
-                    headers=response.headers,
+                    headers=response_header,
                     media_type=response.media_type,
                 )
             else:
@@ -337,7 +339,7 @@ async def get_and_set_cache(
                 return Response(
                     content=body,
                     status_code=response.status_code,
-                    headers=response.headers,
+                    headers=response_header,
                     media_type=response.media_type,
                 )
         else:
