@@ -195,7 +195,6 @@ async def set_cache(
     }
     cached["content"] = cached["content"].split("<bbs_json_error>")[-1]
     cached["content"] = cached["content"].split("<bbs_json_data>")[-1]
-
     cached["content"] = json.loads(cached["content"])
 
     sec_time = datetime.timedelta(days=settings.redis.expiry)
