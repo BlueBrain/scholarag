@@ -300,8 +300,9 @@ async def get_and_set_cache(
             # moved from set_cache, easier for streaming.
             response_header = {**response.headers, "X-fastapi-cache": "Miss"}
 
-            # FastAPI uses '_StremingResponse' everywhere under the hood.
-            if str(request.url).rpartition("/")[-1] == "streamed_generative":
+            if response.headers.get(
+                "content-type"
+            ) and "text/event-stream" in response.headers.get("content-type"):
 
                 async def stream_response() -> AsyncGenerator[bytes, None]:
                     body = b""
