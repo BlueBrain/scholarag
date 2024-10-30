@@ -64,6 +64,7 @@ async def test_raise_error(tmp_path):
             )
 
 
+@pytest.mark.httpx_mock(can_send_already_matched_responses=True)
 @pytest.mark.asyncio
 async def test_run(tmp_path, httpx_mock):
     # Create two files
@@ -117,12 +118,6 @@ async def test_run(tmp_path, httpx_mock):
 
         # Call specifying the directory with two files
         # Reset mock calls
-        httpx_mock.reset(assert_all_responses_were_requested=False)
-        httpx_mock.add_response(
-            method="POST",
-            url="http://localhost/fake_parser",
-            json=content,
-        )
 
         # Launching the function
         await run(
@@ -137,7 +132,7 @@ async def test_run(tmp_path, httpx_mock):
             index="paragraphs",
         )
 
-    assert len(httpx_mock.get_requests()) == 2
+    assert len(httpx_mock.get_requests()) == 3
 
 
 async def fake_close(self):

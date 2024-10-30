@@ -556,8 +556,6 @@ async def test_get_journal_name(httpx_mock, issn, name):
         name_found = await get_journal_name(issn, client)
     assert name == name_found
 
-    httpx_mock.reset(assert_all_responses_were_requested=False)
-
     httpx_mock.add_response(
         url=f"https://portal.issn.org/resource/ISSN/{issn}",
         method="GET",
@@ -567,8 +565,6 @@ async def test_get_journal_name(httpx_mock, issn, name):
     async with httpx.AsyncClient() as client:
         name = await get_journal_name(issn, client)
     assert not name
-
-    httpx_mock.reset(assert_all_responses_were_requested=False)
 
     httpx_mock.add_response(
         url=f"https://portal.issn.org/resource/ISSN/{issn}",
