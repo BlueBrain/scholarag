@@ -500,6 +500,7 @@ async def test_metadata_retriever_recreate_abstract_with_db(
 @pytest.mark.parametrize(
     ["issn", "name"], [("1234-5678", "great_journal"), ("3426-1936", "bad_journal")]
 )
+@pytest.mark.httpx_mock(can_send_already_matched_responses=True)
 async def test_get_journal_name(httpx_mock, issn, name):
     # If ISSN is None
     async with httpx.AsyncClient() as client:

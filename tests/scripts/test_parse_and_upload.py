@@ -140,6 +140,7 @@ async def fake_close(self):
 
 
 @pytest.mark.asyncio
+@pytest.mark.httpx_mock(can_send_already_matched_responses=True)
 @patch("scholarag.document_stores.AsyncOpenSearch.close", new=fake_close)
 async def test_run_with_es_instance(tmp_path, httpx_mock, get_testing_async_ds_client):
     ds_client, parameters = get_testing_async_ds_client
