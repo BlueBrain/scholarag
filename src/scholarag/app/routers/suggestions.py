@@ -178,10 +178,10 @@ async def author_suggestion(
     # Match case insensitive. Sadly aggregate queries don't support the CASE_INSENSITIVE flag
     # The /i flag is not supported either in regex queries.
     start = time.time()
-    regex_pattern = "".join(
-        [f"[{char.lower()}{char.upper()}]" for char in request.name]
-    )
 
+    regex_pattern = "".join(
+        [f"[{char.lower()}{char.upper()}]" if char != " " else r"\s+" for char in request.name]
+    )
     pattern = re.compile(re.escape(request.name), re.IGNORECASE)
 
     # Regex query to partially match author name with a keyword field.
