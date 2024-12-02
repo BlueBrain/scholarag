@@ -180,7 +180,10 @@ async def author_suggestion(
     start = time.time()
 
     regex_pattern = "".join(
-        [f"[{char.lower()}{char.upper()}]" if char != " " else r"\s+" for char in request.name]
+        [
+            f"[{char.lower()}{char.upper()}]" if char != " " else r"\s+"
+            for char in request.name
+        ]
     )
     pattern = re.compile(re.escape(request.name), re.IGNORECASE)
 

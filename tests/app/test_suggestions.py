@@ -1,13 +1,15 @@
 """Tests for the suggestions endpoints."""
 
+from unittest.mock import AsyncMock
+
 import pytest
 from httpx import ASGITransport, AsyncClient
+
+from app.dependencies_overrides import override_ds_client
 from scholarag.app.config import Settings
 from scholarag.app.dependencies import ErrorCode, get_ds_client, get_settings
 from scholarag.app.main import app
 
-from app.dependencies_overrides import override_ds_client
-from unittest.mock import AsyncMock
 
 def test_article_type(app_client):
     """Test the author suggestion endpoint."""
@@ -686,7 +688,6 @@ async def test_journal_duplicates(get_testing_async_ds_client):
         assert d["print_issn"] == expected_result["print_issn"]
 
 
-
 @pytest.mark.asyncio
 async def test_author_suggestion_with_spaces():
     # Override the get_settings dependency
@@ -697,7 +698,7 @@ async def test_author_suggestion_with_spaces():
             "host": "localhost",
             "port": 9200,
             "user": "test_user",
-            "password": "test_password"
+            "password": "test_password",
         }
     )
     app.dependency_overrides[get_settings] = lambda: test_settings
@@ -707,31 +708,29 @@ async def test_author_suggestion_with_spaces():
     mock_ds_client.search.return_value = {
         "hits": {
             "total": {"value": 1, "relation": "eq"},
-            "hits": [
-                {
-                    "_source": {
-                        "authors": ["Jing Yuan"]
-                    }
-                }
-            ]
+            "hits": [{"_source": {"authors": ["Jing Yuan"]}}],
         }
     }
     app.dependency_overrides[get_ds_client] = lambda: mock_ds_client
 
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
         # Test with a name containing spaces
         response_with_spaces = await client.get(
-            "/suggestions/author",
-            params={"name": "jing yuan", "limit": 100}
+            "/suggestions/author", params={"name": "jing yuan", "limit": 100}
         )
-        assert response_with_spaces.status_code != 500, "Request with spaces should not return 500"
+        assert (
+            response_with_spaces.status_code != 500
+        ), "Request with spaces should not return 500"
 
         # Test with a name without spaces
         response_without_spaces = await client.get(
-            "/suggestions/author",
-            params={"name": "jing", "limit": 100}
+            "/suggestions/author", params={"name": "jing", "limit": 100}
         )
-        assert response_without_spaces.status_code == 200, "Request without spaces should return 200"
+        assert (
+            response_without_spaces.status_code == 200
+        ), "Request without spaces should return 200"
 
         # Optionally, check the response content
         response_with_spaces_json = response_with_spaces.json()
@@ -739,7 +738,9 @@ async def test_author_suggestion_with_spaces():
 
         # Ensure the responses are as expected
         assert isinstance(response_with_spaces_json, list), "Response should be a list"
-        assert isinstance(response_without_spaces_json, list), "Response should be a list"
+        assert isinstance(
+            response_without_spaces_json, list
+        ), "Response should be a list"
 
     # Clean up dependency overrides
     app.dependency_overrides.clear()
