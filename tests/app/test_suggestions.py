@@ -4,11 +4,11 @@ from unittest.mock import AsyncMock
 
 import pytest
 from httpx import ASGITransport, AsyncClient
-
-from app.dependencies_overrides import override_ds_client
 from scholarag.app.config import Settings
 from scholarag.app.dependencies import ErrorCode, get_ds_client, get_settings
 from scholarag.app.main import app
+
+from app.dependencies_overrides import override_ds_client
 
 
 def test_article_type(app_client):
