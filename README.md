@@ -1,3 +1,7 @@
+> [!WARNING]
+> The Blue Brain Project concluded in December 2024, so development has ceased under the BlueBrain GitHub organization.
+> Future development will take place at: https://github.com/openbraininstitute/scholarag
+
 # Scholarag
 
 A Retrieval Augmented Generation (RAG) API meant for scientific literature, which includes data management utilities and relevant endpoints for efficiently showcasing papers to your users.
